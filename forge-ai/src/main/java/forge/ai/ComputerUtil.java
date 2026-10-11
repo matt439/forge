@@ -836,6 +836,8 @@ public class ComputerUtil {
             if (sacrificed.size() < amount) {
                 System.err.println("Warning: AILogic Lethal could not meaningfully select enough cards for the AF Sacrifice on " + source.getHostCard());
             }
+        } else if ("SacToDraw".equals(source.getParam("AILogic")) && isOptional) {
+            return chooseSacrificesToDraw(ai, cardlist, amount, source);
         } else if (isOptional && source.getActivatingPlayer().isOpponentOf(ai)) {
             // Check if not sacrificing would result in lethal life loss
             boolean wouldDieFromNotSacrificing = false;
@@ -934,6 +936,56 @@ public class ComputerUtil {
             sacrificed.add(host);
         }
 
+        return sacrificed;
+    }
+
+    /**
+     * "Sacrifice any number of permanents, then draw that many cards" (e.g. God-Eternal Bontu): sacrifice only
+     * what's worth less than a card, keep the lands the hand still needs, and never draw the library out.
+     */
+    private static CardCollection chooseSacrificesToDraw(final Player ai, final CardCollectionView cardlist, final int amount, final SpellAbility source) {
+        final Card host = source.getHostCard();
+        final CardCollection first = new CardCollection(); // going to the graveyard anyway, or marked SacMe
+        final CardCollection cheap = new CardCollection(); // weak creatures and non-creature tokens
+        final CardCollection lands = new CardCollection();
+        for (Card c : cardlist) {
+            if (c.equals(host) || !c.getController().equals(ai)) {
+                continue;
+            }
+            if (c.hasSVar("SacMe") || ComputerUtilCard.hasActiveUndyingOrPersist(c) || shouldSacrificeThreatenedCard(ai, c, source)) {
+                first.add(c);
+            } else if (c.isCommander()) {
+                continue;
+            } else if (c.isLand()) {
+                lands.add(c);
+            } else if (c.isCreature() ? ComputerUtilCard.evaluateCreature(c) <= 135 : c.isToken()) {
+                cheap.add(c);
+            }
+        }
+
+        // keep enough lands for the most expensive card in hand, counting up to two lands still to play
+        final CardCollectionView hand = ai.getCardsIn(ZoneType.Hand);
+        final int landsInHand = Math.min(2, CardLists.count(hand, CardPredicates.LANDS));
+        final int highestCMC = Math.max(6, Aggregates.max(CardLists.getNotType(hand, "Land"), Card::getCMC));
+        final int keepLands = Math.max(0, highestCMC - landsInHand);
+        final CardCollection extraLands = new CardCollection();
+        while (lands.size() > keepLands) {
+            Card worst = ComputerUtilCard.getWorstLand(lands);
+            lands.remove(worst);
+            extraLands.add(worst);
+        }
+
+        // keep two cards in the library so the next draws don't lose the game
+        final int limit = Math.min(amount, ai.getCardsIn(ZoneType.Library).size() - 2);
+        final CardCollection sacrificed = new CardCollection();
+        for (CardCollection group : List.of(first, cheap, extraLands)) {
+            for (Card c : group) {
+                if (sacrificed.size() >= limit) {
+                    return sacrificed;
+                }
+                sacrificed.add(c);
+            }
+        }
         return sacrificed;
     }
 

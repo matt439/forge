@@ -19,6 +19,7 @@ import forge.game.cost.CostDraw;
 import forge.game.cost.CostPart;
 import forge.game.cost.CostPutCounter;
 import forge.game.cost.CostRemoveCounter;
+import forge.game.cost.CostSacrifice;
 import forge.game.keyword.Keyword;
 import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
@@ -83,7 +84,21 @@ public class TokenAi extends SpellAbilityAi {
 
         // X-cost spells
         if (tokenHasX) {
-            int x = AbilityUtils.calculateAmount(source, tokenAmount, sa);
+            int x;
+            if (amountCountsSacrificed(sa, tokenAmount)) {
+                // e.g. Ghoulcaller Gisa: X is the sacrificed creature's power, and the cost isn't paid yet,
+                // so work X out from the creature the AI would sacrifice
+                CardCollection sac = ComputerUtil.chooseSacrificeType(ai, getSacrificeCost(sa).getType(), sa, null, false, 1, null);
+                if (sac == null || sac.isEmpty()) {
+                    return false;
+                }
+                x = amountWithSacrificed(source, tokenAmount, sa, sac.getFirst());
+                if (!worthSacrificing(ai, sa, actualToken, x, sac.getFirst())) {
+                    return false;
+                }
+            } else {
+                x = AbilityUtils.calculateAmount(source, tokenAmount, sa);
+            }
             if (source.getSVar("X").equals("Count$Converge")) {
                 x = ComputerUtilMana.getConvergeCount(sa, ai);
             }
@@ -209,6 +224,59 @@ public class TokenAi extends SpellAbilityAi {
         }
 
         return new AiAbilityDecision(0, AiPlayDecision.CantPlayAi);
+    }
+
+    private static CostSacrifice getSacrificeCost(final SpellAbility sa) {
+        if (sa.getPayCosts() == null) {
+            return null;
+        }
+        for (CostPart part : sa.getPayCosts().getCostParts()) {
+            if (part instanceof CostSacrifice sac && !sac.payCostFromSource()) {
+                return sac;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Whether the token amount counts something about a creature sacrificed to pay the cost
+     * ("Sacrificed$CardPower" and the like).
+     */
+    private static boolean amountCountsSacrificed(final SpellAbility sa, final String tokenAmount) {
+        return getSacrificeCost(sa) != null && sa.getSVar(tokenAmount).startsWith("Sacrificed$");
+    }
+
+    /**
+     * The token amount as if the cost had sacrificed this card.
+     */
+    private static int amountWithSacrificed(final Card source, final String tokenAmount, final SpellAbility sa, final Card sacrificed) {
+        final SpellAbility root = sa.getRootAbility();
+        final String key = "Sacrificed";
+        final boolean hadList = root.getPaidHash().contains(key, true);
+        root.addCostToHashList(sacrificed, key, true);
+        try {
+            return AbilityUtils.calculateAmount(source, tokenAmount, sa);
+        } finally {
+            if (hadList) {
+                root.getPaidList(key, true).remove(sacrificed);
+            } else {
+                root.getPaidHash().remove(key, true);
+            }
+        }
+    }
+
+    /**
+     * Whether x tokens are worth more than the creature sacrificed for them, or it's going to die anyway.
+     */
+    private static boolean worthSacrificing(final Player ai, final SpellAbility sa, final Card token, final int x, final Card sacrificed) {
+        if (x <= 0) {
+            return false;
+        }
+        if (!sacrificed.isCreature() || ComputerUtil.shouldSacrificeThreatenedCard(ai, sacrificed, sa)) {
+            return true;
+        }
+        int tokenValue = token.isCreature() ? ComputerUtilCard.evaluateCreature(token) : 0;
+        return x * tokenValue > ComputerUtilCard.evaluateCreature(sacrificed);
     }
 
     /**
