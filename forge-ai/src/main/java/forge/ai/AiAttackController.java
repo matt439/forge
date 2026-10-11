@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version $Id$
  */
 public class AiAttackController {
-
+    private static final boolean DECKLAB_IN_ORDER = !"off".equals(System.getProperty("decklab.gamePatches")); // Deck Lab: R14b on
     // possible attackers and blockers
     private List<Card> attackers;
     private List<Card> blockers;
@@ -880,7 +880,7 @@ public class AiAttackController {
         // nextTurn is now only used by effect from Oracle en-Vec, which can skip check must attack,
         // because creatures not chosen can't attack.
         if (!nextTurn) {
-            ExecutorService executor = Executors.newFixedThreadPool(
+            ExecutorService executor = DECKLAB_IN_ORDER ? null : Executors.newFixedThreadPool( // Deck Lab: none in order
                 Runtime.getRuntime().availableProcessors(), r -> {
                     Thread t = Executors.defaultThreadFactory().newThread(r);
                     t.setDaemon(true);
@@ -951,13 +951,13 @@ public class AiAttackController {
                     return 0;
                 });
             }
-
-            try {
+            // Deck Lab: in order (unless -Ddecklab.gamePatches=off), each task in turn on this thread, no timeout
+            try { if (DECKLAB_IN_ORDER) { for (Callable<Integer> task : tasks) { try { task.call(); } catch (Exception | StackOverflowError e) { } } } else
                 executor.invokeAll(tasks, ai.getGame().getAITimeout(), TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {
-                executor.shutdownNow();
+                if (executor != null) executor.shutdownNow(); // Deck Lab: none in order
             }
 
             if (attackersLeft.isEmpty()) {
@@ -1833,3 +1833,37 @@ public class AiAttackController {
     }
 
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.AiAttackController (this fork's decklab branch, from tag forge-2.0.15,
+ * forge-ai/src/main/java/forge/ai/AiAttackController.java), under Forge's GPL-3 header above. This note
+ * is at the end so that every line above it keeps its line number in Forge's file, and stack traces line
+ * up with Forge's.
+ *
+ * What changed, each line marked "Deck Lab" (sim-investigation.md R14b, and the wave 2 contract's
+ * "Game-changing patches", decklab/forge-trial/sim-wave2-contract.md): in declareAttackers, the checks of
+ * which attackers must attack (one task per attacker in this.attackers, unchanged) run one after another
+ * on the game thread, in this.attackers' order, with no timeout, instead of on a new thread pool
+ * (availableProcessors() threads) through invokeAll with the AI timeout. A task that throws is passed
+ * over and the loop goes on, as invokeAll kept whatever a task threw in its Future and nobody read it:
+ * that attacker just isn't forced. That covers an exception (Callable.call() declares Exception) and a
+ * StackOverflowError, the one Error AI code plausibly throws: the checks now run deeper in the game
+ * thread's stack than on a pool thread of their own, and a game Forge finishes must not crash here. Any
+ * other Error (OutOfMemoryError and the like) ends the game as a crash, and Deck Lab's serve mode starts
+ * a fresh JVM after it. synchronized (combat) around addAttacker, attackersLeft.remove and the
+ * numForcedAttackers count are Forge's, unchanged. Nothing else is changed, but the one field that says
+ * which way it plays (DECKLAB_IN_ORDER); the inner class (AiAttackController$SpellAbilityFactors) is
+ * Forge's.
+ * With -Ddecklab.gamePatches=off (read once, as the class loads) it plays Forge's own code: the thread
+ * pool and invokeAll as before. Deck Lab's card-log check plays it that way to compare with plain Forge.
+ * Why: Forge adds the forced attackers to the combat in whatever order the pool's threads happen to
+ * finish, and runs their checks (isEffectiveAttacker among them) at the same time on the shared game, so
+ * a deck with two or more creatures that must attack can play a seed differently from one run to the
+ * next. In order, the same seed plays the same game. It also saves a thread pool per attack declaration
+ * (made for predicted attacks too). It changes the games a seed plays, so Deck Lab's engine id names it
+ * ("attack-requirements-in-order-1" in decklab/forge-patches.txt), and a change to what it plays needs a new id.
+ *
+ * This was a copy in Deck Lab's card-log jar (decklab/lib/forge/simjar.py in Deck Lab's repo) until it
+ * moved into this fork's decklab branch. forge-game's resource decklab/forge-patches.txt lists it, and
+ * Deck Lab reads that list to know which of these changes the jar holds.
+ */

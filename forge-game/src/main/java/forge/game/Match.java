@@ -34,7 +34,7 @@ public class Match {
     private final List<RegisteredPlayer> players;
     private final GameRules rules;
     private final String title;
-
+    private static final boolean DECKLAB_ORDER = !"off".equals(System.getProperty("decklab.gamePatches")); // Deck Lab: deck-order-1 on
     private final EventBus events = new EventBus("match events");
     private final Map<Integer, GameOutcome> gameOutcomes = Maps.newHashMap();
 
@@ -200,7 +200,7 @@ public class Match {
     private static void preparePlayerZone(Player player, final ZoneType zoneType, CardPool section, boolean canRandomFoil) {
         PlayerZone library = player.getZone(zoneType);
         List<Card> newLibrary = new ArrayList<>();
-        for (final Entry<PaperCard, Integer> stackOfCards : section) {
+        for (final Entry<PaperCard, Integer> stackOfCards : DECKLAB_ORDER && zoneType == ZoneType.Library ? LibraryOrder.entries(player, section) : section) { // Deck Lab: the .dck's line order
             final PaperCard cp = stackOfCards.getKey();
             for (int i = 0; i < stackOfCards.getValue(); i++) {
                 final Card card = Card.fromPaperCard(cp, player);
@@ -462,3 +462,54 @@ public class Match {
     }
 
 }
+
+/*
+ * Forge: Play Magic: the Gathering.
+ * Copyright (C) 2011  Forge Team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Deck Lab's changes to Forge's forge.game.Match (this fork's decklab branch, from tag forge-2.0.15,
+ * forge-game/src/main/java/forge/game/Match.java). Forge's file has no licence header of its own;
+ * Forge is GPL-3 (its LICENSE), so this copy is too, under the header Forge's other source files
+ * carry, above. This note is at the end so that every line above it keeps its line number in
+ * Forge's file, and stack traces line up with Forge's.
+ *
+ * What changed, each line marked "Deck Lab" (the wave 3 contract's "deck-order-1",
+ * decklab/forge-trial/sim-wave3-contract.md section 3.2): preparePlayerZone builds a player's library
+ * from the order forge.game.LibraryOrder's hook gives, when there is one
+ * (Deck Lab plugs its decklab.DeckOrder in as it starts): the request's .dck [Main] lines in their order,
+ * copies expanded, one (card, 1) entry each, so Forge's own loop body makes the Cards with the same
+ * Card.fromPaperCard, foil and setCollectible calls per card, in that order, and draws as many
+ * MyRandom numbers as it would. The hook gives Forge's own section back (its hash order) when it has
+ * no order for the player (v1 games, tournament mode, a seat whose names don't match: an unsupported
+ * card left out, or a name Forge rewrote), and for every zone but the library. Nothing else is
+ * changed, but the one field that says which way it plays (DECKLAB_ORDER).
+ * With -Ddecklab.gamePatches=off (read once, as the class loads) it plays Forge's own code: the
+ * library in the section's hash order. Deck Lab's card-log check plays it that way to compare with
+ * plain Forge.
+ * Why: a deck section is a CardPool backed by a hash map, so Forge builds the library in the hash
+ * order of its PaperCards before the shuffle, and a one-card change to a list moves many other cards
+ * to new places in it. In the .dck's line order, a variant written in its base list's order (a new
+ * card in a removed copy's line) keeps every other card in its place, so the same seed shuffles both
+ * libraries the same way and a paired test's two games stay the same until the changed card is seen
+ * (sim-investigation.md R15). It changes the games a seed plays, so Deck Lab's engine id names it
+ * ("deck-order-1" in decklab/forge-patches.txt), and a change to what it plays needs a new id.
+ *
+ * This was a copy in Deck Lab's card-log jar (decklab/lib/forge/simjar.py in Deck Lab's repo) until it
+ * moved into this fork's decklab branch. forge-game's resource decklab/forge-patches.txt lists it, and
+ * Deck Lab reads that list to know which of these changes the jar holds.
+ */

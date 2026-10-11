@@ -1,0 +1,8 @@
+# Deck Lab's changes in this Forge build (the fork's decklab branch), read by Deck Lab:
+# <class file> <id of a change to the games a seed plays, or - for one that plays the same games>
+# A new id for every change to what a game-changing one plays. Each plays Forge's own code with
+# -Ddecklab.gamePatches=off.
+forge/ai/AiAttackController.class attack-requirements-in-order-1
+forge/ai/AiController.class -
+forge/game/Match.class deck-order-1
+forge/game/mulligan/AbstractMulligan.class -

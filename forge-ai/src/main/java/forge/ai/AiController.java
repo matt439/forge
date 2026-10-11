@@ -1596,7 +1596,7 @@ public class AiController {
             Sentry.captureMessage(ex.getMessage() + "\nAssertionError [verifyTransitivity]: " + assertex);
         }
 
-        FutureTask<SpellAbility> future = new FutureTask<>(() -> {
+        FutureTask<SpellAbility> future = new FutureTask<>(() -> { AiSignals.LIVE_EVALS.incrementAndGet(); try { // Deck Lab: counted while it runs
             //avoid ComputerUtil.aiLifeInDanger in loops as it slows down a lot.. call this outside loops will generally be fast...
             boolean isLifeInDanger = useLivingEnd && ComputerUtil.aiLifeInDanger(player, true, 0);
             for (final SpellAbility sa : ComputerUtilAbility.getOriginalAndAltCostAbilities(all, player)) {
@@ -1678,15 +1678,15 @@ public class AiController {
             }
 
             return null;
-        });
-        Thread t = new Thread(future, "Game AI Eval");
-        t.setDaemon(true);
-        t.start();
+        } finally { AiSignals.LIVE_EVALS.decrementAndGet(); } }); // Deck Lab: down before the future completes
+        Thread t = AiSignals.LIVE_EVALS.get() == 0 ? Thread.ofVirtual().name("Game AI Eval").unstarted(future) // Deck Lab: a virtual
+                : new Thread(future, "Game AI Eval"); // thread, but a platform one while an earlier eval still runs (note at the end)
+        t.setDaemon(true); t.start(); // (a virtual thread is a daemon already)
         try {
             return future.get(game.getAITimeout(), TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
-            if (e instanceof TimeoutException) {
+            if (e instanceof TimeoutException) { AiSignals.AI_TIMEOUTS.incrementAndGet(); // Deck Lab: counted for the game loop
                 // log where the eval thread currently is - each timeout doubles as a
                 // profiler sample for diagnosing remaining AI slowdowns from user logs
                 StringBuilder sb = new StringBuilder("AI eval thread at timeout:");
@@ -1707,11 +1707,11 @@ public class AiController {
             if (t.isAlive()) {
                 // last resort, see #8302: the eval thread may be stuck inside a single
                 // evaluation or an infinite loop and never reach the cooperative exit
-                try {
-                    t.stop();
-                } catch (UnsupportedOperationException | NoSuchMethodError ex) {
-                    // Stop support: dropped by Android and Java 20 / 26 removed it completely - so sadly thread will keep running
-                }
+                // Deck Lab: Forge's t.stop() was here, in a try/catch for UnsupportedOperationException |
+                // NoSuchMethodError. JDK 26 has no Thread.stop() (Forge's compiled call throws
+                // NoSuchMethodError there, which it catches) and a virtual thread can't be stopped, so
+                // the copy leaves it out: as on JDK 26, a stuck eval thread keeps running (and keeps
+                // Signals.LIVE_EVALS above 0 until it ends).
             }
             // TODO mark some as skipped to increase chance to find something playable next priority
             return null;
@@ -2392,3 +2392,36 @@ public class AiController {
     }
 
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.AiController (this fork's decklab branch, from tag forge-2.0.15,
+ * forge-ai/src/main/java/forge/ai/AiController.java), under Forge's GPL-3 header above. This note is at
+ * the end so that every line above it keeps its line number in Forge's file, and stack traces line up
+ * with Forge's.
+ *
+ * What changed, all in chooseSpellAbilityToPlayFromList and each marked "Deck Lab" (sim-investigation.md
+ * R14a, and the wave 2 contract's "Game-changing patches", decklab/forge-trial/sim-wave2-contract.md):
+ *   1. The "Game AI Eval" task runs on a virtual thread instead of a new platform thread, unless an
+ *      earlier eval is still running (AiSignals.LIVE_EVALS above 0): then on a platform thread, as
+ *      Forge does. The name is kept (forge.util.ThreadUtil.isGameThread() looks for "Game"), and the
+ *      game thread still waits in future.get(game.getAITimeout(), SECONDS) and cancels the task the same
+ *      way on a timeout.
+ *   2. The task counts itself in AiSignals.LIVE_EVALS while it runs: up as its body starts, down
+ *      in a finally as it ends, inside the task, so the count is down before its future completes.
+ *   3. A timeout adds 1 to AiSignals.AI_TIMEOUTS where Forge prints "AI eval thread at timeout".
+ *   4. Forge's last-resort t.stop() after a timeout is left out: JDK 26 has no Thread.stop() (Forge's
+ *      compiled call throws NoSuchMethodError there, which it catches), so the copy wouldn't compile with
+ *      it, and a virtual thread can't be stopped anyway. As on JDK 26, a stuck eval thread keeps running.
+ * Nothing else is changed: the same members (javap), the same inner class (AiController$1).
+ * Why: a new platform thread per AI decision (about 300 a game) costs 112-185 us to start and end; a
+ * virtual thread 9-24 us. The eval does the same work on either thread, so the same seed plays the same
+ * games (checked line for line). AiSignals lets Deck Lab's game loop and serve mode see a timed-out eval
+ * that is still running, which can draw from the next game's random numbers. The platform thread while
+ * one runs: virtual threads share the JVM's 2 carrier threads (-XX:ActiveProcessorCount=2), and a stuck
+ * eval never gives its carrier up, so two of them would leave every later eval waiting for a carrier
+ * until it timed out.
+ *
+ * This was a copy in Deck Lab's card-log jar (decklab/lib/forge/simjar.py in Deck Lab's repo) until it
+ * moved into this fork's decklab branch. forge-game's resource decklab/forge-patches.txt lists it, and
+ * Deck Lab reads that list to know which of these changes the jar holds.
+ */
