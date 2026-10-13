@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 /**
  * Deck Lab's AI switch "removal-in-combat-1": ComputerUtilCard.useRemovalNow's interrupt 2 ("remove
  * blocker to save my attacker") on the AI's own turn. With the switch off it plays Forge's own code, which
- * looks for the blocker only on the opponent's turn.
+ * looks for the blocker only on the opponent's turn. With it on, that opponent's-turn reading is gone.
  */
 public class RemovalInCombatSwitchTest extends DeckLabSwitchTest {
 
@@ -83,12 +83,13 @@ public class RemovalInCombatSwitchTest extends DeckLabSwitchTest {
     }
 
     /**
-     * The opponent's Savannah Lions attacks and the AI's Grizzly Bears blocks it, on the opponent's turn.
-     * The switch only acts on the AI's own turn, so with it on the answer is the switch-off answer, for
-     * the same random draws.
+     * The opponent's Savannah Lions attacks and the AI's Grizzly Bears blocks it, on the opponent's turn,
+     * and the target is the attacker, not a blocker. Interrupt 2 looks only at blockers, so the switch
+     * changes nothing for this target: with it on the answer is the switch-off answer, for the same random
+     * draws. (A blocker as the target on the opponent's turn is the next test.)
      */
     @Test
-    public void testOpponentsTurnUnchangedWithSwitchOn() {
+    public void testNonBlockerTargetUnchangedOnOpponentsTurn() {
         Game game = initAndCreateGame();
         Player ai = game.getPlayers().get(1);
         Player opponent = game.getPlayers().get(0);
@@ -120,10 +121,50 @@ public class RemovalInCombatSwitchTest extends DeckLabSwitchTest {
                 MyRandom.setRandom(new Random(seed));
                 boolean on = ComputerUtilCard.useRemovalNow(murderSa, lions, 0, ZoneType.Graveyard);
 
-                AssertJUnit.assertEquals("seed " + seed + ": the switch changes nothing on the opponent's turn", off, on);
+                AssertJUnit.assertEquals("seed " + seed + ": the switch changes nothing for a target that isn't a blocker", off, on);
             }
         } finally {
             MyRandom.setRandom(before);
         }
+    }
+
+    /**
+     * The opponent's Grizzly Bears attacks and the AI's own Savannah Lions blocks it, on the opponent's
+     * turn, and the target is the Lions. Forge's own interrupt 2 (the switch off) says yes, since removing
+     * the Lions would leave the Bears alive: it always reads the blocker as the one to remove, whoever
+     * controls it. No caller reaches this in a two-player game (removal targets an opponent's card), but in
+     * multiplayer a third player's blocker could be the target. With the switch on that reading is gone:
+     * the Lions are worth about 0.17 (a one-mana 2/1 against a three-mana spell, the AI at 100 life),
+     * under useRemovalNow's 0.2 floor, so the answer is no without any random draw.
+     */
+    @Test
+    public void testOpponentsTurnBlockerReadingGoneWithSwitchOn() {
+        Game game = initAndCreateGame();
+        Player ai = game.getPlayers().get(1);
+        Player opponent = game.getPlayers().get(0);
+        ai.setLife(100, null);
+
+        Card lions = addCard("Savannah Lions", ai);
+        addCards("Swamp", 3, ai);
+        Card murder = addCardToZone("Murder", ai, ZoneType.Hand);
+        Card bears = addCard("Grizzly Bears", opponent);
+
+        game.getPhaseHandler().devModeSet(PhaseType.COMBAT_DECLARE_BLOCKERS, opponent);
+        game.getAction().checkStateEffects(true);
+
+        Combat combat = new Combat(opponent);
+        combat.addAttacker(bears, ai);
+        combat.addBlocker(bears, lions);
+        game.getPhaseHandler().setCombat(combat);
+
+        SpellAbility murderSa = murder.getFirstSpellAbility();
+        murderSa.setActivatingPlayer(ai);
+
+        AssertJUnit.assertTrue("switch off: Forge's own opponent's-turn reading removes the blocker",
+                ComputerUtilCard.useRemovalNow(murderSa, lions, 0, ZoneType.Graveyard));
+
+        switchOn(ai, AiSwitches.REMOVAL_IN_COMBAT_1);
+        AssertJUnit.assertFalse("switch on: the opponent's-turn reading is gone",
+                ComputerUtilCard.useRemovalNow(murderSa, lions, 0, ZoneType.Graveyard));
     }
 }

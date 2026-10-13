@@ -2331,7 +2331,11 @@ public class ComputerUtilCard {
  *
  * Why: Deck Lab's card logs showed instant removal held through combat (You Cannot Pass!, which can only
  * target a blocking or blocked creature, was cast in 8% of the games it was drawn in). Only the turn test
- * flips; there's no mirror case (removing an opponent's attacker to save the AI's blocker).
- * RemovalInCombatSwitchTest (forge-gui-desktop's tests) checks both settings on the AI's turn and that the
- * switch changes nothing on the opponent's turn.
+ * flips; there's no mirror case (removing an opponent's attacker to save the AI's blocker). With it on, the
+ * opponent's-turn reading (which in a two-player game no caller reaches) is gone; in multiplayer that drops
+ * Forge's odd case of removing a third player's blocker. The interrupt runs only when the caller's chosen
+ * target is already the blocker: the AI doesn't retarget to the blocker killing its attacker, and the
+ * hypothetical combat's defender is the strongest opponent (in 1v1, the real one). RemovalInCombatSwitchTest
+ * (forge-gui-desktop's tests) checks both settings on the AI's turn, that a target that isn't a blocker is
+ * unchanged on the opponent's turn, and that a blocker target there is no longer removed with the switch on.
  */
