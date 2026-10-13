@@ -151,7 +151,7 @@ public class PlayerControllerAi extends PlayerController {
             for (PaperCard cSide : sideboard) {
                 if (processed.contains(cSide)) {
                     continue;
-                } else if (cSide.getRules().getAiHints().getRemAIDecks()) {
+                } else if (cSide.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(cSide.getRules().getName())) { // Deck Lab: gisa-bontu-1
                     continue; // don't sideboard in anything that we don't know how to play
                 } else if (cSide.getRules().getType().isLand()) {
                     continue; // don't know how to sideboard lands efficiently yet
@@ -1703,3 +1703,19 @@ public class PlayerControllerAi extends PlayerController {
         return choices;
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.PlayerControllerAi (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-ai/src/main/java/forge/ai/PlayerControllerAi.java). This note is at the end so that
+ * every line above it keeps its line number in Forge's file, and stack traces line up with Forge's.
+ *
+ * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1":
+ * sideboarding passes over Ghoulcaller Gisa and God-Eternal Bontu when game patches are off
+ * (forge.game.GamePatches.removedFromAiWhenOff), as it passes over any card whose script says
+ * AI:RemoveDeck:All.
+ *
+ * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
+ * this plays as plain Forge with its own scripts; with game patches on it plays Forge's own code. Left
+ * open: forge-core's Deck.UnplayableAICards still reads the branch's scripts (it can't see GamePatches; it
+ * lists cards, it doesn't play them).
+ */

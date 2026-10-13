@@ -2287,7 +2287,7 @@ public class ComputerUtilCard {
     // Determine if the AI has an AI:RemoveDeck:All or an AI:RemoveDeck:Random hint specified.
     // Includes a NPE guard on getRules() which might otherwise be tripped on some cards (e.g. tokens).
     public static boolean isCardRemAIDeck(final Card card) {
-        return card.getRules() != null && card.getRules().getAiHints().getRemAIDecks();
+        return card.getRules() != null && (card.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(card.getRules().getName())); // Deck Lab: gisa-bontu-1
     }
 
     public static boolean isCardRemRandomDeck(final Card card) {
@@ -2305,3 +2305,19 @@ public class ComputerUtilCard {
         }
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.ComputerUtilCard (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-ai/src/main/java/forge/ai/ComputerUtilCard.java). This note is at the end so that
+ * every line above it keeps its line number in Forge's file, and stack traces line up with Forge's.
+ *
+ * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1":
+ * isCardRemAIDeck also says true for Ghoulcaller Gisa and God-Eternal Bontu when game patches are off
+ * (forge.game.GamePatches.removedFromAiWhenOff), so the AI never casts them, as in plain Forge.
+ *
+ * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
+ * this plays as plain Forge with its own scripts; with game patches on it plays Forge's own code. Left
+ * open: forge-core's Deck.UnplayableAICards still reads the branch's scripts (it can't see GamePatches; it
+ * lists cards, it doesn't play them). GisaBontuPatchTest (forge-gui-desktop's tests) plays each case with
+ * game patches on and off.
+ */

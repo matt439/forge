@@ -267,7 +267,7 @@ public final class CardPredicates {
     }
 
     public static Predicate<Card> isRemAIDeck() {
-        return c -> c.getRules() != null && c.getRules().getAiHints().getRemAIDecks();
+        return c -> c.getRules() != null && (c.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(c.getRules().getName())); // Deck Lab: gisa-bontu-1
     }
 
     public static Predicate<Card> castSA(final Predicate<SpellAbility> predSA) {
@@ -320,3 +320,20 @@ public final class CardPredicates {
     public static final Predicate<Card> PLANESWALKERS = Card::isPlaneswalker;
     public static final Predicate<Card> BATTLES = Card::isBattle;
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.game.card.CardPredicates (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-game/src/main/java/forge/game/card/CardPredicates.java), under Forge's GPL-3 header
+ * above. This note is at the end so that every line above it keeps its line number in Forge's file, and
+ * stack traces line up with Forge's.
+ *
+ * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1":
+ * isRemAIDeck() (CopyPermanentAi's filter) also says true for Ghoulcaller Gisa and God-Eternal Bontu when
+ * game patches are off (forge.game.GamePatches.removedFromAiWhenOff).
+ *
+ * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
+ * this plays as plain Forge with its own scripts; with game patches on it plays Forge's own code. Left
+ * open: forge-core's Deck.UnplayableAICards still reads the branch's scripts (it can't see GamePatches; it
+ * lists cards, it doesn't play them). GisaBontuPatchTest (forge-gui-desktop's tests) plays each case with
+ * game patches on and off.
+ */

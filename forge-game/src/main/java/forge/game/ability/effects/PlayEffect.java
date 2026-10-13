@@ -142,7 +142,7 @@ public class PlayEffect extends SpellAbilityEffect {
                 int nCopied = AbilityUtils.calculateAmount(source, num, sa);
                 for (PaperCard cp : cards.collect(StreamUtil.random(nCopied))) {
                     final Card possibleCard = Card.fromPaperCard(cp, sa.getActivatingPlayer());
-                    if (sa.getActivatingPlayer().isAI() && possibleCard.getRules() != null && possibleCard.getRules().getAiHints().getRemAIDecks())
+                    if (sa.getActivatingPlayer().isAI() && possibleCard.getRules() != null && (possibleCard.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(possibleCard.getRules().getName()))) // Deck Lab: gisa-bontu-1
                         continue;
                     // Need to temporarily set the Owner so the Game is set
                     possibleCard.setOwner(sa.getActivatingPlayer());
@@ -560,3 +560,20 @@ public class PlayEffect extends SpellAbilityEffect {
         game.getAction().moveToCommand(eff, sa);
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.game.ability.effects.PlayEffect (this fork's decklab branch, from
+ * tag forge-2.0.15, forge-game/src/main/java/forge/game/ability/effects/PlayEffect.java). This note is at
+ * the end so that every line above it keeps its line number in Forge's file, and stack traces line up with
+ * Forge's.
+ *
+ * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1": an AI
+ * playing a random card from outside the game passes over Ghoulcaller Gisa and God-Eternal Bontu when game
+ * patches are off (forge.game.GamePatches.removedFromAiWhenOff), as it passes over any card whose script
+ * says AI:RemoveDeck:All.
+ *
+ * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
+ * this plays as plain Forge with its own scripts; with game patches on it plays Forge's own code. Left
+ * open: forge-core's Deck.UnplayableAICards still reads the branch's scripts (it can't see GamePatches; it
+ * lists cards, it doesn't play them).
+ */

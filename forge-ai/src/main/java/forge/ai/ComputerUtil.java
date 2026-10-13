@@ -836,7 +836,7 @@ public class ComputerUtil {
             if (sacrificed.size() < amount) {
                 System.err.println("Warning: AILogic Lethal could not meaningfully select enough cards for the AF Sacrifice on " + source.getHostCard());
             }
-        } else if ("SacToDraw".equals(source.getParam("AILogic")) && isOptional) {
+        } else if (forge.game.GamePatches.on() && "SacToDraw".equals(source.getParam("AILogic")) && isOptional) { // Deck Lab: gisa-bontu-1
             return chooseSacrificesToDraw(ai, cardlist, amount, source);
         } else if (isOptional && source.getActivatingPlayer().isOpponentOf(ai)) {
             // Check if not sacrificing would result in lethal life loss
@@ -3336,3 +3336,22 @@ public class ComputerUtil {
         return result;
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.ComputerUtil (this fork's decklab branch, from tag forge-2.0.15,
+ * forge-ai/src/main/java/forge/ai/ComputerUtil.java), under Forge's GPL-3 header above. This note is at
+ * the end so that the lines above it keep the numbers they had after commit af513b9fd.
+ *
+ * What changed, "gisa-bontu-1" (commit af513b9fd, gated since Deck Lab's AI round 1):
+ * choosePermanentsToSacrifice sends an optional sacrifice with AILogic SacToDraw (God-Eternal Bontu's) to
+ * the new chooseSacrificesToDraw, which sacrifices only what's worth less than a card, keeps the lands the
+ * hand needs and keeps two cards in the library. The line marked "Deck Lab: gisa-bontu-1" is its gate.
+ *
+ * With -Ddecklab.gamePatches=off (forge.game.GamePatches.on() false) it plays Forge's own code: the
+ * default path, which sacrifices every permanent offered, lands included. chooseSacrificesToDraw is
+ * reached only through the gated line.
+ *
+ * Why: Forge's AI never cast Bontu, and its default would sacrifice its lands. It changes the games a seed
+ * plays, so it's a game patch, listed in forge-game's decklab/forge-patches.txt. GisaBontuPatchTest
+ * (forge-gui-desktop's tests) plays each case with game patches on and off.
+ */

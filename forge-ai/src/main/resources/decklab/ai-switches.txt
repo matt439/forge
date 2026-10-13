@@ -1,0 +1,9 @@
+# Deck Lab's AI switches in this Forge build (the fork's decklab branch), read by Deck Lab
+# (simjar.FORK_SWITCH_LIST) and by forge.ai.AiSwitches.ids(). One switch a line:
+# <id> <class file> [<class file>...]
+# Each is off unless a seat's pilot names it (Deck Lab's -dlpilot), and always off with
+# -Ddecklab.gamePatches=off. An id's behaviour never changes once a build with it has been used:
+# a change gets a new id.
+removal-in-combat-1 forge/ai/ComputerUtilCard.class
+etb-harmless-1 forge/ai/ability/ChangeZoneAi.class forge/ai/ability/DestroyAllAi.class
+prowess-precombat-1 forge/ai/ComputerUtil.class

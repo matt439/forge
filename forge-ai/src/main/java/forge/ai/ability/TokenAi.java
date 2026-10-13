@@ -85,7 +85,7 @@ public class TokenAi extends SpellAbilityAi {
         // X-cost spells
         if (tokenHasX) {
             int x;
-            if (amountCountsSacrificed(sa, tokenAmount)) {
+            if (forge.game.GamePatches.on() && amountCountsSacrificed(sa, tokenAmount)) { // Deck Lab: gisa-bontu-1
                 // e.g. Ghoulcaller Gisa: X is the sacrificed creature's power, and the cost isn't paid yet,
                 // so work X out from the creature the AI would sacrifice
                 CardCollection sac = ComputerUtil.chooseSacrificeType(ai, getSacrificeCost(sa).getType(), sa, null, false, 1, null);
@@ -574,3 +574,23 @@ public class TokenAi extends SpellAbilityAi {
         return super.willPayUnlessCost(payer, sa, cost, alreadyPaid, payers);
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.ability.TokenAi (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-ai/src/main/java/forge/ai/ability/TokenAi.java). This note is at the end so that the
+ * lines above it keep the numbers they had after commit af513b9fd.
+ *
+ * What changed, "gisa-bontu-1" (commit af513b9fd, gated since Deck Lab's AI round 1): for a token amount
+ * that counts the creature sacrificed to pay the cost (Ghoulcaller Gisa's "Sacrificed$CardPower"),
+ * checkPhaseRestrictions works X out from the creature the AI would sacrifice, and activates only when the
+ * tokens are worth more than it (amountCountsSacrificed, amountWithSacrificed, worthSacrificing,
+ * getSacrificeCost). The line marked "Deck Lab: gisa-bontu-1" is its gate.
+ *
+ * With -Ddecklab.gamePatches=off (forge.game.GamePatches.on() false) it plays Forge's own code: X is
+ * worked out before the cost is paid, comes to 0, and the AI never activates Gisa. The added methods are
+ * reached only through the gated line.
+ *
+ * Why: Forge's AI never used Gisa. It changes the games a seed plays, so it's a game patch, listed in
+ * forge-game's decklab/forge-patches.txt. GisaBontuPatchTest (forge-gui-desktop's tests) plays each case
+ * with game patches on and off.
+ */

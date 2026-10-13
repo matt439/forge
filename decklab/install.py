@@ -13,12 +13,15 @@ install of BASE_TAG (--release: its res folder, launch scripts and docs), with:
   - each card script this branch changed since BASE_TAG put into res/cardsfolder/cardsfolder.zip in place
     of the release's (one it deleted taken out);
   - every other file it changed under forge-gui/res copied into res;
-  - decklab-build.txt: the build name, commit and base tag.
+  - decklab-build.txt: the build name, commit and base tag, the number of card scripts changed and, when
+    anything under forge-gui/res changed, res_sha256: a hash of every changed path and its content (CRLF
+    made LF), which Deck Lab's engine key uses, so two builds with the same res files share it.
 The release install is never changed. The new folder is made beside --out and swapped in at the end, so a
 failed run leaves the old install as it was. Deck Lab's config forge_dir points at --out.
 """
 
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -56,6 +59,15 @@ def changed_res():
         status, path = line.split("\t", 1)
         out[path] = status != "D"
     return out
+
+
+def res_sha256(changes):
+    """A hash of changed_res(): each path with its content's sha256 (CRLF made LF), or - when deleted."""
+    h = hashlib.sha256()
+    for path, keep in sorted(changes.items()):
+        digest = hashlib.sha256((ROOT / path).read_bytes().replace(b"\r\n", b"\n")).hexdigest() if keep else "-"
+        h.update(f"{path}\0{digest}\n".encode("utf-8"))
+    return h.hexdigest()
 
 
 def jar_build(jar):
@@ -111,8 +123,10 @@ def install(release, target, commit):
         elif dest.exists():
             dest.unlink()
 
+    res_line = f"res_sha256={res_sha256(changes)}\n" if changes else ""
     (staging / "decklab-build.txt").write_text(
-        f"build={name}\ncommit={commit}\nbase={BASE_TAG}\nscripts_changed={sum(scripts.values())}\n", encoding="utf-8")
+        f"build={name}\ncommit={commit}\nbase={BASE_TAG}\nscripts_changed={sum(scripts.values())}\n{res_line}",
+        encoding="utf-8")
     if target.exists():
         old = target.with_name(target.name + ".old")
         if old.exists():

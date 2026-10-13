@@ -2,7 +2,23 @@
 # <class file> <id of a change to the games a seed plays, or - for one that plays the same games>
 # A new id for every change to what a game-changing one plays. Each plays Forge's own code with
 # -Ddecklab.gamePatches=off.
+# A change that plays differently with every AI switch off is a game patch with an id here, gated by
+# forge.game.GamePatches.on(); one off by default is an AI switch (decklab/ai-switches.txt in forge-ai).
+# A class file carries at most one id here; several classes may share one.
 forge/ai/AiAttackController.class attack-requirements-in-order-1
 forge/ai/AiController.class -
+forge/ai/AiDecisionLog.class -
+forge/ai/AiSwitches.class -
+forge/ai/ComputerUtil.class gisa-bontu-1
+forge/ai/ComputerUtilCard.class gisa-bontu-1
+forge/ai/PlayerControllerAi.class gisa-bontu-1
+forge/ai/ProwessFirst.class -
+forge/ai/ability/ChangeZoneAi.class -
+forge/ai/ability/DestroyAllAi.class -
+forge/ai/ability/TokenAi.class gisa-bontu-1
+forge/game/GamePatches.class -
 forge/game/Match.class deck-order-1
+forge/game/ability/effects/CopyPermanentEffect.class gisa-bontu-1
+forge/game/ability/effects/PlayEffect.class gisa-bontu-1
+forge/game/card/CardPredicates.class gisa-bontu-1
 forge/game/mulligan/AbstractMulligan.class -
