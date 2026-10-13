@@ -41,11 +41,16 @@ public class ProwessPrecombatSwitchTest extends DeckLabSwitchTest {
     }
 
     private Board board(PhaseType phase, boolean aiTurn) {
+        return board(phase, aiTurn, "Monastery Swiftspear", false);
+    }
+
+    /** The same board with another creature in the Swiftspear's place, summoning sick or not. */
+    private Board board(PhaseType phase, boolean aiTurn, String creature, boolean sick) {
         Game game = initAndCreateGame();
         Player ai = game.getPlayers().get(1);
         Player opponent = game.getPlayers().get(0);
-        Card swiftspear = addCard("Monastery Swiftspear", ai);
-        swiftspear.setSickness(false);
+        Card swiftspear = addCard(creature, ai);
+        swiftspear.setSickness(sick);
         addCards("Island", 3, ai);
         fillLibrary(ai, 10);
         Card divination = addCardToZone("Divination", ai, ZoneType.Hand);
@@ -124,5 +129,37 @@ public class ProwessPrecombatSwitchTest extends DeckLabSwitchTest {
         AssertJUnit.assertEquals(castOff, on.castInMain1());
         AssertJUnit.assertEquals(willingOff, on.drawAiWilling());
         AssertJUnit.assertTrue("DrawAi holds Divination in main 2", willingOff);
+    }
+
+    @Test
+    public void testNotForASummoningSickCreature() {
+        // Seeker of the Way has prowess and no haste, so summoning sickness keeps it from attacking.
+        Board b = board(PhaseType.MAIN1, true, "Seeker of the Way", true);
+        switchOn(b.ai, AiSwitches.PROWESS_PRECOMBAT_1);
+        AssertJUnit.assertFalse("a summoning-sick Seeker of the Way counts", b.castInMain1());
+
+        Board ready = board(PhaseType.MAIN1, true, "Seeker of the Way", false);
+        switchOn(ready.ai, AiSwitches.PROWESS_PRECOMBAT_1);
+        AssertJUnit.assertTrue("a Seeker of the Way that can attack doesn't count", ready.castInMain1());
+    }
+
+    @Test
+    public void testASpellCastTriggerCounts() {
+        // Young Pyromancer has no prowess, only "whenever you cast an instant or sorcery spell".
+        Board b = board(PhaseType.MAIN1, true, "Young Pyromancer", false);
+        switchOn(b.ai, AiSwitches.PROWESS_PRECOMBAT_1);
+        AssertJUnit.assertTrue("Young Pyromancer's trigger doesn't count", b.castInMain1());
+    }
+
+    @Test
+    public void testBurnCountsOnlyWithTheSwitchOn() {
+        Board b = board(PhaseType.MAIN1, true);
+        Card shock = addCardToZone("Shock", b.ai, ZoneType.Hand);
+        SpellAbility sa = shock.getFirstSpellAbility();
+        sa.setActivatingPlayer(b.ai);
+        gamePatchesOn();
+        AssertJUnit.assertFalse("Shock counts with the switch off", ProwessFirst.castNow(b.ai, sa));
+        switchOn(b.ai, AiSwitches.PROWESS_PRECOMBAT_1);
+        AssertJUnit.assertTrue("Shock doesn't count with the switch on", ProwessFirst.castNow(b.ai, sa));
     }
 }
