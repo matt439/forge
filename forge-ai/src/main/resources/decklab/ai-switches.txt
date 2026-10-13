@@ -6,4 +6,4 @@
 # a change gets a new id.
 removal-in-combat-1 forge/ai/ComputerUtilCard.class
 etb-harmless-1 forge/ai/ability/ChangeZoneAi.class forge/ai/ability/DestroyAllAi.class
-prowess-precombat-1 forge/ai/ComputerUtil.class
+prowess-precombat-1 forge/ai/ComputerUtil.class forge/ai/ProwessFirst.class
