@@ -151,7 +151,7 @@ public class PlayerControllerAi extends PlayerController {
             for (PaperCard cSide : sideboard) {
                 if (processed.contains(cSide)) {
                     continue;
-                } else if (cSide.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(cSide.getRules().getName())) { // Deck Lab: gisa-bontu-1
+                } else if (forge.game.GamePatches.remAIDecks(cSide.getRules())) { // Deck Lab: gisa-bontu-1
                     continue; // don't sideboard in anything that we don't know how to play
                 } else if (cSide.getRules().getType().isLand()) {
                     continue; // don't know how to sideboard lands efficiently yet
@@ -1711,7 +1711,7 @@ public class PlayerControllerAi extends PlayerController {
  *
  * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1":
  * sideboarding passes over Ghoulcaller Gisa and God-Eternal Bontu when game patches are off
- * (forge.game.GamePatches.removedFromAiWhenOff), as it passes over any card whose script says
+ * (forge.game.GamePatches.remAIDecks), as it passes over any card whose script says
  * AI:RemoveDeck:All.
  *
  * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off

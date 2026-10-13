@@ -1,5 +1,7 @@
 package forge.game;
 
+import forge.card.CardRules;
+
 /**
  * Whether Deck Lab's game patches play (this fork's decklab branch). Each change listed with an id in
  * forge-game's resource decklab/forge-patches.txt plays Forge's own code with -Ddecklab.gamePatches=off,
@@ -10,9 +12,11 @@ package forge.game;
  * patches off, its Java paths (TokenAi, ComputerUtil's SacToDraw) play Forge's own code, and both cards
  * count as removed from AI decks (removedFromAiWhenOff), the hint Forge's own scripts carry
  * (AI:RemoveDeck:All), which this branch's scripts no longer say. The readers of that hint that can see
- * this class check it too: ComputerUtilCard.isCardRemAIDeck, CardPredicates.isRemAIDeck, PlayEffect,
- * CopyPermanentEffect and PlayerControllerAi's sideboarding. Left open: forge-core's
- * Deck.UnplayableAICards, which can't see forge-game (it lists cards, it doesn't play them).
+ * this class read it through remAIDecks: ComputerUtilCard.isCardRemAIDeck, CardPredicates.isRemAIDeck,
+ * PlayEffect, CopyPermanentEffect and PlayerControllerAi's sideboarding. Left open, neither of which
+ * plays: forge-core's Deck.UnplayableAICards, which can't see forge-game (it lists cards, which Match only
+ * shows, and an AI's controller ignores: PlayerControllerAi.revealAISkipCards does nothing), and
+ * ComputerUtilCard.AI_KNOWS_HOW_TO_PLAY_ALL_CARDS, which nothing calls.
  */
 public final class GamePatches {
     private GamePatches() {}
@@ -36,6 +40,14 @@ public final class GamePatches {
     /** For tests only: plays as if the property said on (true) or off (false); null goes back to the property. */
     public static void setForTests(Boolean on) {
         forTests = on;
+    }
+
+    /**
+     * Whether the AI leaves a card out (the AI:RemoveDeck:All hint): its script says so, or it's one that
+     * removedFromAiWhenOff names. Every reader of the hint that can see this class goes through here.
+     */
+    public static boolean remAIDecks(CardRules rules) {
+        return rules.getAiHints().getRemAIDecks() || removedFromAiWhenOff(rules.getName());
     }
 
     /**

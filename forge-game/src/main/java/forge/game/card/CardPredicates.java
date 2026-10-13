@@ -267,7 +267,7 @@ public final class CardPredicates {
     }
 
     public static Predicate<Card> isRemAIDeck() {
-        return c -> c.getRules() != null && (c.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(c.getRules().getName())); // Deck Lab: gisa-bontu-1
+        return c -> c.getRules() != null && forge.game.GamePatches.remAIDecks(c.getRules()); // Deck Lab: gisa-bontu-1
     }
 
     public static Predicate<Card> castSA(final Predicate<SpellAbility> predSA) {
@@ -329,7 +329,7 @@ public final class CardPredicates {
  *
  * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1":
  * isRemAIDeck() (CopyPermanentAi's filter) also says true for Ghoulcaller Gisa and God-Eternal Bontu when
- * game patches are off (forge.game.GamePatches.removedFromAiWhenOff).
+ * game patches are off (forge.game.GamePatches.remAIDecks).
  *
  * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
  * this plays as plain Forge with its own scripts; with game patches on it plays Forge's own code. Left

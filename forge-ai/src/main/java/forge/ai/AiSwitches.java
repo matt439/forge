@@ -42,7 +42,10 @@ public final class AiSwitches {
         hook = h;
     }
 
-    /** Whether switch id is on for player: never without a hook, or with game patches off. */
+    /**
+     * Whether switch id is on for player: never without a hook, or with game patches off. Without a hook
+     * it's one volatile read; with one, a second (GamePatches' test setting) before the hook is asked.
+     */
     public static boolean on(Player player, String id) {
         BiPredicate<Player, String> h = hook;
         return h != null && player != null && GamePatches.on() && h.test(player, id);

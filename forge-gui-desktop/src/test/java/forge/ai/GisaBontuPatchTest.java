@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 
 import forge.game.Game;
+import forge.game.GamePatches;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
@@ -46,6 +47,33 @@ public class GisaBontuPatchTest extends DeckLabSwitchTest {
         }
         AssertJUnit.assertFalse(ComputerUtilCard.isCardRemAIDeck(bears));
         AssertJUnit.assertFalse(CardPredicates.isRemAIDeck().test(bears));
+    }
+
+    /**
+     * GamePatches.remAIDecks, which PlayEffect, CopyPermanentEffect and PlayerControllerAi's sideboarding
+     * read the hint through: Gisa and Bontu only with game patches off, a card whose script says
+     * AI:RemoveDeck:All either way, any other card never.
+     */
+    @Test
+    public void testRemAIDecksHelper() {
+        Game game = initAndCreateGame();
+        Player ai = game.getPlayers().get(1);
+        Card gisa = createCard("Ghoulcaller Gisa", ai);
+        Card bontu = createCard("God-Eternal Bontu", ai);
+        Card abandonHope = createCard("Abandon Hope", ai);
+        Card bears = createCard("Grizzly Bears", ai);
+
+        gamePatchesOn();
+        AssertJUnit.assertFalse(GamePatches.remAIDecks(gisa.getRules()));
+        AssertJUnit.assertFalse(GamePatches.remAIDecks(bontu.getRules()));
+        AssertJUnit.assertTrue(GamePatches.remAIDecks(abandonHope.getRules()));
+        AssertJUnit.assertFalse(GamePatches.remAIDecks(bears.getRules()));
+
+        gamePatchesOff();
+        AssertJUnit.assertTrue(GamePatches.remAIDecks(gisa.getRules()));
+        AssertJUnit.assertTrue(GamePatches.remAIDecks(bontu.getRules()));
+        AssertJUnit.assertTrue(GamePatches.remAIDecks(abandonHope.getRules()));
+        AssertJUnit.assertFalse(GamePatches.remAIDecks(bears.getRules()));
     }
 
     /**

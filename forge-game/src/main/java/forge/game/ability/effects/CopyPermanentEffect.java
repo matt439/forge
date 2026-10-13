@@ -172,7 +172,7 @@ public class CopyPermanentEffect extends TokenEffectBase {
                         Card possibleCard = Card.fromPaperCard(cp, activator); // Need to temporarily set the Owner so the Game is set
 
                         if (possibleCard.isValid(valid, host.getController(), host, sa)) {
-                            if (host.getController().isAI() && possibleCard.getRules() != null && (possibleCard.getRules().getAiHints().getRemAIDecks() || forge.game.GamePatches.removedFromAiWhenOff(possibleCard.getRules().getName()))) // Deck Lab: gisa-bontu-1
+                            if (host.getController().isAI() && possibleCard.getRules() != null && forge.game.GamePatches.remAIDecks(possibleCard.getRules())) // Deck Lab: gisa-bontu-1
                                 continue;
                             choice.add(possibleCard);
                             ncopied -= 1;
@@ -336,7 +336,7 @@ public class CopyPermanentEffect extends TokenEffectBase {
  *
  * What changed, "gisa-bontu-1" (Deck Lab's AI round 1), the line marked "Deck Lab: gisa-bontu-1": an AI
  * copying a random card from outside the game passes over Ghoulcaller Gisa and God-Eternal Bontu when game
- * patches are off (forge.game.GamePatches.removedFromAiWhenOff), as it passes over any card whose script
+ * patches are off (forge.game.GamePatches.remAIDecks), as it passes over any card whose script
  * says AI:RemoveDeck:All.
  *
  * Why: commit af513b9fd took AI:RemoveDeck:All out of both cards' scripts. With -Ddecklab.gamePatches=off
