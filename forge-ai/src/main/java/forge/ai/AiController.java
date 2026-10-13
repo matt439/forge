@@ -2425,6 +2425,8 @@ public class AiController {
  * ability's opinion also hands it to AiDecisionLog.spell, marked "Deck Lab: -Ddecklab.decisionLog". With
  * -Ddecklab.decisionLog=<card names> (";"-separated, %XX escaped, or "*") it prints one DLAI| line per
  * ability of a named card the AI weighs: turn, phase, seats, the AiPlayDecision, the API and the card.
+ * Abilities the loop skips before that line get none: counterspells in the normal lookup (skipCounter),
+ * Storm spells below MIN_COUNT_FOR_STORM_SPELLS, and the Living End deck's skipped cascade spells.
  * Without the property it only reads one static field, so it plays Forge's own code; with it, it only
  * reads the game and prints, so the same seed plays the same games either way. It isn't a game patch or
  * an AI switch (forge-patches.txt lists AiDecisionLog with "-"). Why: Deck Lab's experiments count when a

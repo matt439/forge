@@ -27,7 +27,12 @@ import forge.item.IPaperCard;
  * DLAI|1|turn|active seat|phase|seat|decision|api|card
  * where a seat is the N of an "Ai(N)-" player name (else "?"), the phase is PhaseType's name (or "-"),
  * the decision is the AiPlayDecision, the api is the ability's ApiType (or "-"), and the card is the host
- * card's name with "|", CR and LF made "/". Deck Lab's decklab/lib/forge/decisionlog.py reads them.
+ * card's name with "|", CR and LF made "/" (the name the property matched: its paper card's name when only
+ * that matched, as for a face-down card). Deck Lab's decklab/lib/forge/decisionlog.py reads them.
+ *
+ * Some abilities are skipped before the line and never get one: counterspells in the normal priority
+ * lookup (they're weighed only with a spell on the stack, by paths this line doesn't cover), Storm spells
+ * below the AI's MIN_COUNT_FOR_STORM_SPELLS, and the Living End deck's skipped cascade spells.
  */
 public final class AiDecisionLog {
     private AiDecisionLog() {}
@@ -110,6 +115,7 @@ public final class AiDecisionLog {
             if (paper == null || !n.contains(paper.getName())) {
                 return;
             }
+            card = paper.getName(); // the name that matched
         }
         Game game = host.getGame();
         PhaseHandler ph = game == null ? null : game.getPhaseHandler();

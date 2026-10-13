@@ -80,6 +80,12 @@ public class AiDecisionLogTest extends AITest {
         for (PhaseType phase : List.of(PhaseType.MAIN1, PhaseType.MAIN2)) {
             AssertJUnit.assertEquals(List.of(), choose(phase).lines);
         }
+        // The shipped default: no property, so FROM_PROPERTY is null.
+        AiDecisionLog.setForTests(null);
+        AssertJUnit.assertFalse(AiDecisionLog.on());
+        for (PhaseType phase : List.of(PhaseType.MAIN1, PhaseType.MAIN2)) {
+            AssertJUnit.assertEquals(List.of(), choose(phase).lines);
+        }
     }
 
     @Test
