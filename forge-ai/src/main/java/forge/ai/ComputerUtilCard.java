@@ -1259,7 +1259,7 @@ public class ComputerUtilCard {
         }
 
         // interrupt 2: remove blocker to save my attacker
-        if (ph.is(PhaseType.COMBAT_DECLARE_BLOCKERS) && !ph.isPlayerTurn(ai)) {
+        if (ph.is(PhaseType.COMBAT_DECLARE_BLOCKERS) && ph.isPlayerTurn(ai) == forge.ai.AiSwitches.on(ai, forge.ai.AiSwitches.REMOVAL_IN_COMBAT_1)) { // Deck Lab: removal-in-combat-1 (Forge's own: !isPlayerTurn)
             Combat currCombat = game.getCombat();
             if (currCombat != null && !currCombat.getAllBlockers().isEmpty() && currCombat.getAllBlockers().contains(c)) {
                 for (Card attacker : currCombat.getAttackersBlockedBy(c)) {
@@ -2320,4 +2320,22 @@ public class ComputerUtilCard {
  * open: forge-core's Deck.UnplayableAICards still reads the branch's scripts (it can't see GamePatches; it
  * lists cards, it doesn't play them). GisaBontuPatchTest (forge-gui-desktop's tests) plays each case with
  * game patches on and off.
+ *
+ * What changed, "removal-in-combat-1" (an AI switch, Deck Lab's AI round 1), the line marked "Deck Lab:
+ * removal-in-combat-1": useRemovalNow's interrupt 2 ("remove blocker to save my attacker") tested
+ * !isPlayerTurn(ai), so it looked for the creature to remove among the blockers only on the opponent's turn,
+ * when the blockers are the AI's own, and in a two-player game it never fired. With the switch on it tests
+ * isPlayerTurn(ai): on the AI's own turn, removal at an opponent's blocker that would destroy the AI's
+ * attacker is cast when removing that blocker saves the attacker. With the switch off (the default, and
+ * always with -Ddecklab.gamePatches=off) the test is !isPlayerTurn(ai), Forge's own code exactly.
+ *
+ * Why: Deck Lab's card logs showed instant removal held through combat (You Cannot Pass!, which can only
+ * target a blocking or blocked creature, was cast in 8% of the games it was drawn in). Only the turn test
+ * flips; there's no mirror case (removing an opponent's attacker to save the AI's blocker). With it on, the
+ * opponent's-turn reading (which in a two-player game no caller reaches) is gone; in multiplayer that drops
+ * Forge's odd case of removing a third player's blocker. The interrupt runs only when the caller's chosen
+ * target is already the blocker: the AI doesn't retarget to the blocker killing its attacker, and the
+ * hypothetical combat's defender is the strongest opponent (in 1v1, the real one). RemovalInCombatSwitchTest
+ * (forge-gui-desktop's tests) checks both settings on the AI's turn, that a target that isn't a blocker is
+ * unchanged on the opponent's turn, and that a blocker target there is no longer removed with the switch on.
  */
