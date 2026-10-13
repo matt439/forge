@@ -1662,7 +1662,7 @@ public class AiController {
                     sa.setLastStateGraveyard(game.getLastStateGraveyard());
                 }
                 //override decision for living end player
-                AiPlayDecision opinion = useLivingEnd && AiPlayDecision.WillPlay.equals(aiPlayDecision) ? aiPlayDecision : canPlayAndPayFor(sa);
+                AiPlayDecision opinion = useLivingEnd && AiPlayDecision.WillPlay.equals(aiPlayDecision) ? aiPlayDecision : canPlayAndPayFor(sa); AiDecisionLog.spell(player, sa, opinion); // Deck Lab: -Ddecklab.decisionLog
 
                 // reset LastStateBattlefield
                 sa.clearLastState();
@@ -2420,6 +2420,17 @@ public class AiController {
  * one runs: virtual threads share the JVM's 2 carrier threads (-XX:ActiveProcessorCount=2), and a stuck
  * eval never gives its carrier up, so two of them would leave every later eval waiting for a carrier
  * until it timed out.
+ *
+ * The decision log (Deck Lab AI round 1, ai-r1 C9): in the same loop, the line that works out each
+ * ability's opinion also hands it to AiDecisionLog.spell, marked "Deck Lab: -Ddecklab.decisionLog". With
+ * -Ddecklab.decisionLog=<card names> (";"-separated, %XX escaped, or "*") it prints one DLAI| line per
+ * ability of a named card the AI weighs: turn, phase, seats, the AiPlayDecision, the API and the card.
+ * Without the property it only reads one static field, so it plays Forge's own code; with it, it only
+ * reads the game and prints, so the same seed plays the same games either way. It isn't a game patch or
+ * an AI switch (forge-patches.txt lists AiDecisionLog with "-"). Why: Deck Lab's experiments count when a
+ * card could have been cast and why the AI held it (decklab/lib/forge/decisionlog.py). AiDecisionLogTest
+ * holds that nothing prints without names, a named card's line prints with them, and the chosen ability is
+ * the same either way.
  *
  * This was a copy in Deck Lab's card-log jar (decklab/lib/forge/simjar.py in Deck Lab's repo) until it
  * moved into this fork's decklab branch. forge-game's resource decklab/forge-patches.txt lists it, and
