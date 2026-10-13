@@ -1140,7 +1140,7 @@ public class ChangeZoneAi extends SpellAbilityAi {
 
         boolean doWithoutTarget = sa.isPwAbility() && sa.usesTargeting()
                 && sa.getMinTargets() == 0
-                && sa.getPayCosts().hasSpecificCostType(CostPutCounter.class);
+                && sa.getPayCosts().hasSpecificCostType(CostPutCounter.class) || (forge.ai.AiSwitches.on(ai, forge.ai.AiSwitches.ETB_HARMLESS_1) && sa instanceof AbilitySub && sa.usesTargeting() && sa.getMinTargets() == 0); // Deck Lab: etb-harmless-1
 
         if (list.isEmpty() && !doWithoutTarget) {
             return false;
@@ -2176,3 +2176,28 @@ public class ChangeZoneAi extends SpellAbilityAi {
         return super.willPayUnlessCost(payer, sa, cost, alreadyPaid, payers);
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.ability.ChangeZoneAi (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-ai/src/main/java/forge/ai/ability/ChangeZoneAi.java). This note is at the
+ * end so that every line above it keeps its line number in Forge's file.
+ *
+ * What changed, AI switch "etb-harmless-1" (Deck Lab's AI round 1, scout C4): in isPreferredTarget,
+ * doWithoutTarget is also true for a sub-ability (AbilitySub) that targets "up to" its targets
+ * (getMinTargets() == 0), when the switch is on for the AI player. The line marked
+ * "Deck Lab: etb-harmless-1" is the only change. An empty filtered target list then no longer refuses
+ * such a sub (the list.isEmpty() test after it), and the target loop's "can't find anything left" case
+ * passes it without a target. A trigger's own ability (its Execute, such as Samwise's) is an AbilitySub
+ * too, so every "up to" ChangeZone trigger is covered as well as riders: a creature whose enters
+ * trigger bounces, exiles or returns "up to one target" is now cast when there's nothing to hit. A
+ * spell's or activated ability's own top-level "up to" targeting is unchanged, as in Forge.
+ *
+ * With the switch off (the default: AiSwitches.on is false unless Deck Lab's pilot names the switch for
+ * this player, and always false with -Ddecklab.gamePatches=off) it plays Forge's own code: the switch is
+ * read only after Forge's own test is false, and nothing else runs.
+ *
+ * Why: an optional rider such as Fiery Annihilation's "exile up to one target Equipment" or Samwise the
+ * Stouthearted's "up to one target permanent card" vetoed the whole spell or enters trigger when it had
+ * nothing to target, so the AI never cast those cards in a normal game. EtbHarmlessSwitchTest
+ * (forge-gui-desktop's tests) checks both cards with the switch off and on.
+ */

@@ -74,7 +74,7 @@ public class DestroyAllAi extends SpellAbilityAi {
             opplist = CardLists.filter(opplist, predicate);
             ailist = CardLists.filter(ailist, predicate);
             if (opplist.isEmpty()) {
-                return new AiAbilityDecision(0, AiPlayDecision.CantPlayAi);
+                return forge.ai.AiSwitches.on(ai, forge.ai.AiSwitches.ETB_HARMLESS_1) && !sa.usesTargeting() && ailist.isEmpty() && (sa.isTrigger() || sa instanceof forge.game.spellability.AbilitySub) ? new AiAbilityDecision(100, AiPlayDecision.WillPlay) : new AiAbilityDecision(0, AiPlayDecision.CantPlayAi); // Deck Lab: etb-harmless-1
             }
 
             if (sa.usesTargeting()) {
@@ -206,3 +206,25 @@ public class DestroyAllAi extends SpellAbilityAi {
         return super.willPayUnlessCost(payer, sa, cost, alreadyPaid, payers);
     }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.ai.ability.DestroyAllAi (this fork's decklab branch, from tag
+ * forge-2.0.15, forge-ai/src/main/java/forge/ai/ability/DestroyAllAi.java). This note is at the
+ * end so that every line above it keeps its line number in Forge's file.
+ *
+ * What changed, AI switch "etb-harmless-1" (Deck Lab's AI round 1, scout C4): in doMassRemovalLogic,
+ * when the opponent has nothing the effect would destroy, a trigger or a sub-ability (AbilitySub) is
+ * played (WillPlay) instead of refused, if it has no targets, the AI has nothing it would destroy
+ * either and the switch is on for the AI player. A targeted one (such as Street Sweeper's "destroy all
+ * Auras attached to target land") is still refused, as in Forge, since it would return without a target. The line marked "Deck Lab: etb-harmless-1" is the only change. A spell such as
+ * Day of Judgment, or an effect that would destroy only the AI's own cards, is still refused, as in Forge.
+ *
+ * With the switch off (the default: AiSwitches.on is false unless Deck Lab's pilot names the switch for
+ * this player, and always false with -Ddecklab.gamePatches=off) it plays Forge's own code: the switch is
+ * read first and the rest of the new test doesn't run.
+ *
+ * Why: a harmless rider that destroys nothing, such as Fires of Mount Doom's "destroy all Equipment
+ * attached to that creature" when there's none, vetoed the whole enters trigger, so the AI never cast
+ * Fires of Mount Doom. EtbHarmlessSwitchTest (forge-gui-desktop's tests) checks it with the switch off and
+ * on, and that Day of Judgment on empty boards stays refused.
+ */
