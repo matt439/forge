@@ -1358,7 +1358,7 @@ public class ComputerUtil {
         final Card source = sa.getHostCard();
         final SpellAbility sub = sa.getSubAbility();
 
-        if (source != null && "ALWAYS".equals(source.getSVar("PlayMain1"))) {
+        if (source != null && ("ALWAYS".equals(source.getSVar("PlayMain1")) || ProwessFirst.castNow(ai, sa))) { // Deck Lab: prowess-precombat-1
             return true;
         }
 
@@ -3354,4 +3354,17 @@ public class ComputerUtil {
  * Why: Forge's AI never cast Bontu, and its default would sacrifice its lands. It changes the games a seed
  * plays, so it's a game patch, listed in forge-game's decklab/forge-patches.txt. GisaBontuPatchTest
  * (forge-gui-desktop's tests) plays each case with game patches on and off.
+ *
+ * What changed, AI switch "prowess-precombat-1" (Deck Lab's AI round 1, off by default): castSpellInMain1
+ * also answers true when forge.ai.ProwessFirst.castNow does, on the line marked
+ * "Deck Lab: prowess-precombat-1". castNow is a cheap (mana value 3 or less) noncreature, nonland spell
+ * whose root API is Draw, Dig, Scry, Surveil or DealDamage, on the AI's own MAIN1, while an untapped
+ * creature of the AI's that can attack has prowess or a SpellCast trigger the spell satisfies. It reaches
+ * DrawAi's and the other castSpellInMain1 gates, and ComputerUtilCard.useRemovalNow's main 1 test.
+ *
+ * With the switch off (no seat's pilot names it, or -Ddecklab.gamePatches=off) castNow returns false
+ * before any other check, so this plays Forge's own code.
+ *
+ * Why: Forge's AI holds card draw until main 2, so a prowess creature attacks without its pump (upstream
+ * issue #6617). ProwessPrecombatSwitchTest (forge-gui-desktop's tests) checks it off and on.
  */
