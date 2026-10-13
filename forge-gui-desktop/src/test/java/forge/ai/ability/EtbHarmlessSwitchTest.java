@@ -80,8 +80,8 @@ public class EtbHarmlessSwitchTest extends DeckLabSwitchTest {
                 AiPlayDecision.BadEtbEffects, decide(ai, samwise));
 
         switchOn(ai, AiSwitches.ETB_HARMLESS_1);
-        AssertJUnit.assertNotSame("With etb-harmless-1 the empty optional trigger doesn't veto Samwise",
-                AiPlayDecision.BadEtbEffects, decide(ai, samwise));
+        AssertJUnit.assertEquals("With etb-harmless-1 the AI casts Samwise with an empty graveyard",
+                AiPlayDecision.WillPlay, decide(ai, samwise));
     }
 
     /** Fiery Annihilation's "exile up to one target Equipment" sub, with no Equipment anywhere. */
@@ -118,8 +118,8 @@ public class EtbHarmlessSwitchTest extends DeckLabSwitchTest {
                 AiPlayDecision.BadEtbEffects, decide(ai, fires));
 
         switchOn(ai, AiSwitches.ETB_HARMLESS_1);
-        AssertJUnit.assertNotSame("With etb-harmless-1 the harmless Equipment rider doesn't veto Fires",
-                AiPlayDecision.BadEtbEffects, decide(ai, fires));
+        AssertJUnit.assertEquals("With etb-harmless-1 the AI casts Fires of Mount Doom in its MAIN2",
+                AiPlayDecision.WillPlay, decide(ai, fires));
     }
 
     /** The switch is the AI player's only: on for the opponent, or with game patches off, it's Forge's code. */

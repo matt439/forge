@@ -2187,7 +2187,10 @@ public class ChangeZoneAi extends SpellAbilityAi {
  * (getMinTargets() == 0), when the switch is on for the AI player. The line marked
  * "Deck Lab: etb-harmless-1" is the only change. An empty filtered target list then no longer refuses
  * such a sub (the list.isEmpty() test after it), and the target loop's "can't find anything left" case
- * passes it without a target. A top-level "up to one target" ability is still refused, as in Forge.
+ * passes it without a target. A trigger's own ability (its Execute, such as Samwise's) is an AbilitySub
+ * too, so every "up to" ChangeZone trigger is covered as well as riders: a creature whose enters
+ * trigger bounces, exiles or returns "up to one target" is now cast when there's nothing to hit. A
+ * spell's or activated ability's own top-level "up to" targeting is unchanged, as in Forge.
  *
  * With the switch off (the default: AiSwitches.on is false unless Deck Lab's pilot names the switch for
  * this player, and always false with -Ddecklab.gamePatches=off) it plays Forge's own code: the switch is
