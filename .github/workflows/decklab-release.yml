@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: "Commit of the decklab branch to build (the one Deck Lab's simjar.py names)"
+        description: "Commit to build, short or full (the part after -decklab- in the build Deck Lab's simjar.py names)"
         required: true
       draft:
         description: "Also make a draft GitHub release"
@@ -23,12 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Check out the commit to build
+      - name: Check out the branch's history
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit }}
           fetch-depth: 0          # install.py compares the branch with its base tag
           path: src
+
+      - name: Check out the commit to build
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: git -C src checkout --detach "$COMMIT"   # a short hash will do
 
       - name: Check out the packing script
         uses: actions/checkout@v4
