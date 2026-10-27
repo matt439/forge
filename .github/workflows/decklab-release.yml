@@ -1,0 +1,79 @@
+# Builds Deck Lab's Forge from one commit of the decklab branch and packs it for download
+# (decklab/RELEASE.md). Run by hand only. It always uploads the archive, its checksum and the
+# release notes as the run's artifact; with "draft" set it also makes a draft GitHub release
+# tagged with the build name, which stays unpublished until someone publishes it on GitHub.
+name: Deck Lab release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit of the decklab branch to build (the one Deck Lab's simjar.py names)"
+        required: true
+      draft:
+        description: "Also make a draft GitHub release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the commit to build
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0          # install.py compares the branch with its base tag
+          path: src
+
+      - name: Check out the packing script
+        uses: actions/checkout@v4
+        with:
+          path: tools
+          sparse-checkout: decklab
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: src/**/pom.xml
+
+      - name: Download the Forge release the branch is based on
+        run: |
+          base=$(sed -n 's/^BASE_TAG = "\(.*\)"$/\1/p' src/decklab/install.py)
+          version=${base#forge-}
+          echo "Base: $base"
+          curl -fsSL -o forge.tar.bz2 \
+            "https://github.com/Card-Forge/forge/releases/download/$base/forge-installer-$version.tar.bz2"
+          mkdir release
+          tar -xjf forge.tar.bz2 -C release
+          rm forge.tar.bz2
+
+      - name: Build and install
+        working-directory: src
+        run: python3 decklab/install.py --release ../release --out ../forge-decklab
+
+      - name: Pack
+        run: python3 tools/decklab/package.py --install forge-decklab --dist dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deck-lab-forge
+          path: dist/
+          compression-level: 0    # the zip is compressed already
+
+      - name: Make a draft release
+        if: ${{ inputs.draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(sed -n 's/^build=//p' forge-decklab/decklab-build.txt)
+          commit=$(git -C src rev-parse HEAD)
+          gh release create "$tag" dist/*.zip dist/*.zip.sha256 \
+            --repo "$GITHUB_REPOSITORY" --draft --target "$commit" \
+            --title "Deck Lab's Forge $tag" --notes-file dist/release-notes.md
