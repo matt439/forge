@@ -9,7 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * "Game-changing patches", says who updates which.)
  *
  *   AI_TIMEOUTS   AI evaluations that hit Forge's AI timeout in this JVM, ever: AiController adds 1
- *                 where Forge prints "AI eval thread at timeout".
+ *                 where Forge prints "AI eval thread at timeout", and (since forge-2.0.16) AITimeoutTracker
+ *                 adds 1 each time an AI decision is cut short at its deadline (as this class loads, it
+ *                 sets AITimeoutTracker.deckLabOnExpired; Deck Lab's game loop reads AI_TIMEOUTS before
+ *                 its first game).
  *   LIVE_EVALS    AI evaluation threads running now: AiController adds 1 as an evaluation starts and
  *                 takes 1 away as it ends (in a finally, inside the task, so before its future
  *                 completes). One still running at a game boundary was left behind by a timeout
@@ -19,6 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class AiSignals {
     private AiSignals() {}
+
+    static {
+        // forge-2.0.16's AI deadline (forge.util.AITimeoutTracker.check) counts as a timeout too: see its note
+        forge.util.AITimeoutTracker.deckLabOnExpired = () -> AI_TIMEOUTS.incrementAndGet();
+    }
 
     /** AI evaluations that hit Forge's AI timeout in this JVM, ever. */
     public static final AtomicInteger AI_TIMEOUTS = new AtomicInteger();

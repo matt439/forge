@@ -399,7 +399,7 @@ public final class SideboardAdvisor {
     /** A card that the deck can cast with the colours it already has; lands and cards the AI cannot play stay out. */
     private static boolean canComeIn(final PaperCard in, final byte mainColors) {
         final CardRules r = in.getRules();
-        if (r.getType().isLand() || r.getAiHints().getRemAIDecks()) {
+        if (r.getType().isLand() || forge.game.GamePatches.remAIDecks(r)) { // Deck Lab: gisa-bontu-1
             return false; // don't sideboard in anything that we don't know how to play
         }
         return r.getColor().hasNoColorsExcept(mainColors);
@@ -446,3 +446,14 @@ public final class SideboardAdvisor {
         return keys;
     }
 }
+
+/*
+ * Deck Lab's change to Forge's forge.ai.SideboardAdvisor (this fork's decklab branch, from tag forge-2.0.16,
+ * forge-ai/src/main/java/forge/ai/SideboardAdvisor.java), under Forge's GPL-3 licence. This note is at the end so that every line
+ * above it keeps its line number in Forge's file.
+ *
+ * What changed, "gisa-bontu-1" (forge.game.GamePatches): canComeIn reads the AI:RemoveDeck:All hint through
+ * GamePatches.remAIDecks, on the line marked "Deck Lab", as the other readers of that hint do, so with
+ * -Ddecklab.gamePatches=off Ghoulcaller Gisa and God-Eternal Bontu count as removed from AI decks, as
+ * Forge's own scripts say. Only Forge's Flat Monte Carlo AI reaches it, which Deck Lab's games leave off.
+ */

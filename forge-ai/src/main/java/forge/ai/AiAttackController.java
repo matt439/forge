@@ -967,11 +967,9 @@ public class AiAttackController {
                             }
                         }
                         return 0;
-                    };
-                    tasks.add(DECKLAB_IN_ORDER ? check : withDeadline(deadline, check)); // Deck Lab: no deadline in order
+                    }; tasks.add(DECKLAB_IN_ORDER ? check : withDeadline(deadline, check)); // Deck Lab: in order, the caller's deadline
                 }
-
-                // Deck Lab: in order (unless -Ddecklab.gamePatches=off), each task in turn on this thread, no timeout
+                // Deck Lab: in order (unless -Ddecklab.gamePatches=off), each task in turn on this thread, no pool
                 try { if (DECKLAB_IN_ORDER) { for (Callable<Integer> task : tasks) { try { task.call(); } catch (Exception | StackOverflowError e) { } } } else
                     executor.invokeAll(tasks, Math.max(1L, AITimeoutTracker.remainingNanos(id, timeoutNanos)), TimeUnit.NANOSECONDS);
                 } catch (InterruptedException e) {
@@ -1892,9 +1890,14 @@ public class AiAttackController {
  * What changed, each line marked "Deck Lab" (sim-investigation.md R14b, and the wave 2 contract's
  * "Game-changing patches", decklab/forge-trial/sim-wave2-contract.md): in declareAttackers, the checks of
  * which attackers must attack (one task per attacker in this.attackers, unchanged) run one after another
- * on the game thread, in this.attackers' order, with no timeout, instead of on a new thread pool
- * (availableProcessors() threads) through invokeAll with the AI timeout (and, since forge-2.0.16, each task under withDeadline's
- * AITimeoutTracker limit, which in order it isn't). A task that throws is passed
+ * on the game thread, in this.attackers' order, instead of on a new thread pool (availableProcessors()
+ * threads) through invokeAll with the AI timeout. Since forge-2.0.16 each pooled task runs under
+ * withDeadline's AITimeoutTracker limit; in order a task isn't wrapped, and runs under whatever deadline
+ * its caller armed on the game thread, if any (AiController.declareAttackers arms one). An Expired one of
+ * them throws is caught with the other exceptions below, so that attacker isn't forced, as withDeadline
+ * does; unlike invokeAll, which cancels the tasks still waiting at the deadline, the loop then goes on, so
+ * a later attacker whose check never calls AITimeoutTracker.check() is still forced. That differs only in
+ * a decision that passed its deadline, which Deck Lab counts as an AI timeout (AITimeoutTracker's note). A task that throws is passed
  * over and the loop goes on, as invokeAll kept whatever a task threw in its Future and nobody read it:
  * that attacker just isn't forced. That covers an exception (Callable.call() declares Exception) and a
  * StackOverflowError, the one Error AI code plausibly throws: the checks now run deeper in the game

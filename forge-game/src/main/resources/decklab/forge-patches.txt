@@ -13,12 +13,15 @@ forge/ai/ComputerUtil.class gisa-bontu-1
 forge/ai/ComputerUtilCard.class gisa-bontu-1
 forge/ai/PlayerControllerAi.class gisa-bontu-1
 forge/ai/ProwessFirst.class -
+forge/ai/SideboardAdvisor.class gisa-bontu-1
 forge/ai/ability/ChangeZoneAi.class -
 forge/ai/ability/DestroyAllAi.class -
 forge/ai/ability/TokenAi.class gisa-bontu-1
+forge/ai/simulation/ComboPlan.class gisa-bontu-1
 forge/game/GamePatches.class -
 forge/game/Match.class deck-order-1
 forge/game/ability/effects/CopyPermanentEffect.class gisa-bontu-1
 forge/game/ability/effects/PlayEffect.class gisa-bontu-1
 forge/game/card/CardPredicates.class gisa-bontu-1
 forge/game/mulligan/AbstractMulligan.class -
+forge/util/AITimeoutTracker.class -

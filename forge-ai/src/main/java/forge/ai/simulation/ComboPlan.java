@@ -109,7 +109,7 @@ public final class ComboPlan {
 
     /** AI:RemoveDeck:All says "the heuristic AI can't play this"; for a combo piece Flat MC may still try it. */
     public boolean overridesRemAi(final Card c) {
-        if (c == null || !c.getRules().getAiHints().getRemAIDecks()) {
+        if (c == null || !forge.game.GamePatches.remAIDecks(c.getRules())) { // Deck Lab: gisa-bontu-1
             return false;
         }
         for (final Combo combo : combos) {
@@ -4121,3 +4121,14 @@ public final class ComboPlan {
         return combos.toString();
     }
 }
+
+/*
+ * Deck Lab's change to Forge's forge.ai.simulation.ComboPlan (this fork's decklab branch, from tag forge-2.0.16,
+ * forge-ai/src/main/java/forge/ai/simulation/ComboPlan.java), under Forge's GPL-3 licence. This note is at the end so that every line
+ * above it keeps its line number in Forge's file.
+ *
+ * What changed, "gisa-bontu-1" (forge.game.GamePatches): overridesRemAi reads the AI:RemoveDeck:All hint through
+ * GamePatches.remAIDecks, on the line marked "Deck Lab", as the other readers of that hint do, so with
+ * -Ddecklab.gamePatches=off Ghoulcaller Gisa and God-Eternal Bontu count as removed from AI decks, as
+ * Forge's own scripts say. Only Forge's Flat Monte Carlo AI reaches it, which Deck Lab's games leave off.
+ */

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class AITimeoutTracker {
     /** The bar becomes visible once this much time has elapsed. */
-    public static final long SHOW_AFTER_NANOS = TimeUnit.SECONDS.toNanos(2);
+    public static final long SHOW_AFTER_NANOS = TimeUnit.SECONDS.toNanos(2); public static volatile Runnable deckLabOnExpired; // Deck Lab: forge.ai.AiSignals counts it
 
     /** How long past its timeout a session may stay open before it is treated as leaked (package-private for tests). */
     static volatile long staleGraceNanos = TimeUnit.SECONDS.toNanos(2);
@@ -211,7 +211,7 @@ public final class AITimeoutTracker {
     public static void check() {
         final Limit l = LIMIT.get();
         if (l.armed && (System.nanoTime() - l.deadlineNanos >= 0 || (l.honourInterrupt && Thread.currentThread().isInterrupted()))) {
-            throw new Expired();
+            deckLabExpired(); throw new Expired(); // Deck Lab: said and counted as an AI timeout
         }
     }
 
@@ -229,4 +229,30 @@ public final class AITimeoutTracker {
     public static long remainingNanos(final long key, final long fallbackTimeoutNanos) {
         return Math.min(remainingNanos(), deadlineNanos(key, fallbackTimeoutNanos) - System.nanoTime());
     }
+
+    private static void deckLabExpired() { // Deck Lab: see the note at the end
+        System.out.println("AI eval thread at timeout: an AI decision passed its deadline (AITimeoutTracker)");
+        final Runnable hook = deckLabOnExpired;
+        if (hook != null) {
+            hook.run();
+        }
+    }
 }
+
+/*
+ * Deck Lab's changes to Forge's forge.util.AITimeoutTracker (this fork's decklab branch, from tag forge-2.0.16,
+ * forge-core/src/main/java/forge/util/AITimeoutTracker.java), under Forge's GPL-3 licence. This note is at
+ * the end, and the field and the call share lines with Forge's, so that every line above the new method
+ * keeps its line number in Forge's file.
+ *
+ * What changed, each marked "Deck Lab": just before check() throws Expired, deckLabExpired() prints a line
+ * starting with Forge's "AI eval thread at timeout" and runs deckLabOnExpired, which forge.ai.AiSignals
+ * sets to add 1 to AiSignals.AI_TIMEOUTS. Nothing else changes: the same Expired is thrown at the same
+ * point, so the same seed plays the same games, with or without -Ddecklab.gamePatches=off.
+ * Why: forge-2.0.16 cuts AI decisions short at a shared wall-clock deadline (game.getAITimeout()) and
+ * carries on with what was decided so far: the eval thread returns its partial list, and the game thread's
+ * attacks, blocks and priority choices catch Expired. Before 2.0.16 a timeout always ended in AiController's
+ * TimeoutException, which Deck Lab counts and Forge prints. Without this, a game whose play depended on how
+ * busy the PC was would pass as clean: Deck Lab's game loop records AI_TIMEOUTS per game, serve mode recycles
+ * a worker after one, and Deck Lab's log reader and checks treat that line as a game that hit a time limit.
+ */

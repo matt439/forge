@@ -13,10 +13,13 @@ import forge.card.CardRules;
  * count as removed from AI decks (removedFromAiWhenOff), the hint Forge's own scripts carry
  * (AI:RemoveDeck:All), which this branch's scripts no longer say. The readers of that hint that can see
  * this class read it through remAIDecks: ComputerUtilCard.isCardRemAIDeck, CardPredicates.isRemAIDeck,
- * PlayEffect, CopyPermanentEffect and PlayerControllerAi's sideboarding. Left open, neither of which
- * plays: forge-core's Deck.UnplayableAICards, which can't see forge-game (it lists cards, which Match only
- * shows, and an AI's controller ignores: PlayerControllerAi.revealAISkipCards does nothing), and
- * ComputerUtilCard.AI_KNOWS_HOW_TO_PLAY_ALL_CARDS, which nothing calls.
+ * PlayEffect, CopyPermanentEffect, PlayerControllerAi's sideboarding and (since forge-2.0.16, Flat Monte
+ * Carlo only) SideboardAdvisor.canComeIn and ComboPlan.overridesRemAi. Left open, none of which plays in
+ * Deck Lab's games: forge-core's readers, which can't see forge-game: Deck.UnplayableAICards (it lists
+ * cards, which Match only shows, and an AI's controller ignores: PlayerControllerAi.revealAISkipCards does
+ * nothing) and, since forge-2.0.16, CardAiHints.isRemovedFromAiDecks with CardRulesPredicates'
+ * IS_KEPT_IN_AI_DECKS and IS_KEPT_IN_AI_LIMITED_DECKS and DeckManaBase (all deck building, which Deck Lab
+ * doesn't ask Forge for); and ComputerUtilCard.AI_KNOWS_HOW_TO_PLAY_ALL_CARDS, which nothing calls.
  */
 public final class GamePatches {
     private GamePatches() {}
@@ -44,7 +47,8 @@ public final class GamePatches {
 
     /**
      * Whether the AI leaves a card out (the AI:RemoveDeck:All hint): its script says so, or it's one that
-     * removedFromAiWhenOff names. Every reader of the hint that can see this class goes through here.
+     * removedFromAiWhenOff names. Every reader of the hint that can see this class goes through here (the
+     * class note lists the ones left open).
      */
     public static boolean remAIDecks(CardRules rules) {
         return rules.getAiHints().getRemAIDecks() || removedFromAiWhenOff(rules.getName());

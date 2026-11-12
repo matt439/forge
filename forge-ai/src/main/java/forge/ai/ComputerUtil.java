@@ -3471,8 +3471,8 @@ public class ComputerUtil {
 
 /*
  * Deck Lab's changes to Forge's forge.ai.ComputerUtil (this fork's decklab branch, from tag forge-2.0.16,
- * forge-ai/src/main/java/forge/ai/ComputerUtil.java), under Forge's GPL-3 header above. This note is at
- * the end so that the lines above it keep the numbers they had after commit af513b9fd.
+ * forge-ai/src/main/java/forge/ai/ComputerUtil.java), under Forge's GPL-3 header above. This note is at the end so that only the lines
+ * gisa-bontu-1 adds above it (commit af513b9fd) move Forge's line numbers.
  *
  * What changed, "gisa-bontu-1" (commit af513b9fd, gated since Deck Lab's AI round 1):
  * choosePermanentsToSacrifice sends an optional sacrifice with AILogic SacToDraw (God-Eternal Bontu's) to

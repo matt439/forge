@@ -2959,7 +2959,7 @@ public class AiController {
                 // NoSuchMethodError. JDK 26 has no Thread.stop() (Forge's compiled call throws
                 // NoSuchMethodError there, which it catches) and a virtual thread can't be stopped, so
                 // the copy leaves it out: as on JDK 26, a stuck eval thread keeps running (and keeps
-                // Signals.LIVE_EVALS above 0 until it ends).
+                // AiSignals.LIVE_EVALS above 0 until it ends).
             }
             // TODO mark some as skipped to increase chance to find something playable next priority
             return Collections.emptyList();
@@ -3715,7 +3715,9 @@ public class AiController {
  * ability of a named card the AI weighs: turn, phase, seats, the AiPlayDecision, the API and the card.
  * Abilities the loop skips before that line get none: counterspells in the normal lookup (skipCounter),
  * Storm spells below MIN_COUNT_FOR_STORM_SPELLS, and those Forge's ComboPlan holds back or skips
- * (since forge-2.0.16; before it, the Living End deck's skipped cascade spells).
+ * (since forge-2.0.16; before it, the Living End deck's skipped cascade spells). Nor are the weighings
+ * outside that loop: the counterspell lookup, and forge-2.0.16's assemblyApproved and playDecision, which
+ * only Forge's Flat Monte Carlo AI reaches (left off in Deck Lab's games).
  * Without the property it only reads one static field, so it plays Forge's own code; with it, it only
  * reads the game and prints, so the same seed plays the same games either way. It isn't a game patch or
  * an AI switch (forge-patches.txt lists AiDecisionLog with "-"). Why: Deck Lab's experiments count when a
