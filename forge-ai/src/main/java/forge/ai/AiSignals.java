@@ -23,14 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class AiSignals {
     private AiSignals() {}
 
-    static {
-        // forge-2.0.16's AI deadline (forge.util.AITimeoutTracker.check) counts as a timeout too: see its note
-        forge.util.AITimeoutTracker.deckLabOnExpired = () -> AI_TIMEOUTS.incrementAndGet();
-    }
-
     /** AI evaluations that hit Forge's AI timeout in this JVM, ever. */
     public static final AtomicInteger AI_TIMEOUTS = new AtomicInteger();
 
     /** AI evaluation threads running now. */
     public static final AtomicInteger LIVE_EVALS = new AtomicInteger();
+
+    static {
+        // forge-2.0.16's AI deadline (forge.util.AITimeoutTracker.check) counts as a timeout too: see its note
+        forge.util.AITimeoutTracker.deckLabOnExpired = () -> AI_TIMEOUTS.incrementAndGet();
+    }
 }
