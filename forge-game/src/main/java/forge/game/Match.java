@@ -103,6 +103,18 @@ public class Match {
         System.gc();
     }
 
+    /**
+     * The main decks as they were played in the game before this one, taken before anyone sideboards for the next
+     * game: what a player knows about the deck of its opponent. Empty before the second game.
+     */
+    private final Map<RegisteredPlayer, List<PaperCard>> playedMains = new IdentityHashMap<>();
+
+    /** The main deck {@code player} played last game (null if unknown), as everyone at the table has seen it. */
+    public List<PaperCard> getPlayedMain(final RegisteredPlayer player) {
+        final List<PaperCard> main = playedMains.get(player);
+        return main == null ? null : Collections.unmodifiableList(main);
+    }
+
     public GameOutcome getOutcomeById(int id) {
         return gameOutcomes.get(id);
     }
@@ -235,6 +247,14 @@ public class Match {
         // Only allow this if feature flag is on AND for certain match types
         boolean sideboardForAIs = rules.getSideboardForAI() &&
             rules.getGameType().getDeckFormat().equals(DeckFormat.Constructed);
+        playedMains.clear();
+        if (canSideBoard) {
+            for (final RegisteredPlayer rp : playersConditions) {
+                if (rp.getDeck() != null) {
+                    playedMains.put(rp, new ArrayList<>(rp.getDeck().getMain().toFlatList()));
+                }
+            }
+        }
         PlayerController sideboardProxy = null;
         if (canSideBoard && sideboardForAIs) {
             for (int i = 0; i < players.size(); i++) {
@@ -253,7 +273,9 @@ public class Match {
             PlayerController person = player.getController();
 
             if (canSideBoard) {
-                if (sideboardProxy != null && person.isAI()) {
+                // an AI that reads the deck of its opponent sideboards for itself; the human only does it for the others
+                final boolean byItself = person.isAI() && person.sideboardsByItself();
+                if (sideboardProxy != null && person.isAI() && !byItself) {
                     person = sideboardProxy;
                 }
 
@@ -276,6 +298,12 @@ public class Match {
                     toChange.get(DeckSection.Sideboard).addAll(sideboard);
                 }
                 List<PaperCard> newMain = person.sideboard(toChange, rules.getGameType(), player.getName());
+                if (byItself && toChange.has(DeckSection.Sideboard)) {
+                    // show what the AI did with its sideboard, so that nobody has to guess what changed between games
+                    for (final String line : person.getSideboardingReport()) {
+                        game.fireEvent(new GameEventAddLog(GameLogEntryType.SIDEBOARD, player.getName() + " " + line));
+                    }
+                }
                 if (null != newMain) {
                     CardPool allCards = new CardPool();
                     allCards.addAll(toChange.get(DeckSection.Main));
@@ -482,7 +510,7 @@ public class Match {
  */
 
 /*
- * Deck Lab's changes to Forge's forge.game.Match (this fork's decklab branch, from tag forge-2.0.15,
+ * Deck Lab's changes to Forge's forge.game.Match (this fork's decklab branch, from tag forge-2.0.16,
  * forge-game/src/main/java/forge/game/Match.java). Forge's file has no licence header of its own;
  * Forge is GPL-3 (its LICENSE), so this copy is too, under the header Forge's other source files
  * carry, above. This note is at the end so that every line above it keeps its line number in

@@ -209,7 +209,7 @@ public class DestroyAllAi extends SpellAbilityAi {
 
 /*
  * Deck Lab's changes to Forge's forge.ai.ability.DestroyAllAi (this fork's decklab branch, from tag
- * forge-2.0.15, forge-ai/src/main/java/forge/ai/ability/DestroyAllAi.java). This note is at the
+ * forge-2.0.16, forge-ai/src/main/java/forge/ai/ability/DestroyAllAi.java). This note is at the
  * end so that every line above it keeps its line number in Forge's file.
  *
  * What changed, AI switch "etb-harmless-1" (Deck Lab's AI round 1, scout C4): in doMassRemovalLogic,

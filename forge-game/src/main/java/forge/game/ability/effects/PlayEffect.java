@@ -563,7 +563,7 @@ public class PlayEffect extends SpellAbilityEffect {
 
 /*
  * Deck Lab's changes to Forge's forge.game.ability.effects.PlayEffect (this fork's decklab branch, from
- * tag forge-2.0.15, forge-game/src/main/java/forge/game/ability/effects/PlayEffect.java). This note is at
+ * tag forge-2.0.16, forge-game/src/main/java/forge/game/ability/effects/PlayEffect.java). This note is at
  * the end so that every line above it keeps its line number in Forge's file, and stack traces line up with
  * Forge's.
  *

@@ -17,7 +17,7 @@
  */
 
 /*
- * Deck Lab's changes to Forge's forge.game.mulligan.AbstractMulligan (this fork's decklab branch, from tag forge-2.0.15,
+ * Deck Lab's changes to Forge's forge.game.mulligan.AbstractMulligan (this fork's decklab branch, from tag forge-2.0.16,
  * forge-game/src/main/java/forge/game/mulligan/AbstractMulligan.java). Forge's file has no licence
  * header of its own; Forge is GPL-3 (its LICENSE), so this copy is too, under the header Forge's
  * other source files carry.

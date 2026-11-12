@@ -30,7 +30,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BASE_TAG = "forge-2.0.15"
+BASE_TAG = "forge-2.0.16"
 JAR_GLOB = "forge-gui-desktop-*-jar-with-dependencies.jar"
 RES = "forge-gui/res/"
 CARDS = RES + "cardsfolder/"

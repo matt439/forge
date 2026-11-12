@@ -323,7 +323,7 @@ public final class CardPredicates {
 
 /*
  * Deck Lab's changes to Forge's forge.game.card.CardPredicates (this fork's decklab branch, from tag
- * forge-2.0.15, forge-game/src/main/java/forge/game/card/CardPredicates.java), under Forge's GPL-3 header
+ * forge-2.0.16, forge-game/src/main/java/forge/game/card/CardPredicates.java), under Forge's GPL-3 header
  * above. This note is at the end so that every line above it keeps its line number in Forge's file, and
  * stack traces line up with Forge's.
  *

@@ -427,8 +427,7 @@ public class TokenAi extends SpellAbilityAi {
         result.setLastKnownZone(ai.getZone(ZoneType.Battlefield));
 
         // Apply static abilities
-        final Game game = ai.getGame();
-        ComputerUtilCard.applyStaticContPT(game, result, null);
+        ComputerUtilCard.applyStaticContPT(ai.getGame(), result, null);
         return result;
     }
 
@@ -577,7 +576,7 @@ public class TokenAi extends SpellAbilityAi {
 
 /*
  * Deck Lab's changes to Forge's forge.ai.ability.TokenAi (this fork's decklab branch, from tag
- * forge-2.0.15, forge-ai/src/main/java/forge/ai/ability/TokenAi.java). This note is at the end so that the
+ * forge-2.0.16, forge-ai/src/main/java/forge/ai/ability/TokenAi.java). This note is at the end so that the
  * lines above it keep the numbers they had after commit af513b9fd.
  *
  * What changed, "gisa-bontu-1" (commit af513b9fd, gated since Deck Lab's AI round 1): for a token amount
